@@ -26,12 +26,6 @@ use self::{
 use crate::{firmware::Metadata, http_api, runtime_settings::RuntimeSettings, settings::Settings};
 use actix::{Actor, System};
 use futures::future::Future;
-use lazy_static::lazy_static;
-use std::sync::{Arc, RwLock};
-
-lazy_static! {
-    static ref SHARED_STATE: Arc<RwLock<Option<SharedState>>> = Arc::new(RwLock::new(None));
-}
 
 trait StateChangeImpl {
     fn handle(self) -> Result<StateMachine, failure::Error>;
@@ -55,11 +49,15 @@ trait ProgressReporter: TransitionCallback {
 }
 
 #[derive(Debug, PartialEq)]
-struct State<S>(S)
+struct State<S>
 where
-    State<S>: StateChangeImpl;
+    State<S>: StateChangeImpl,
+{
+    inner: S,
+    shared_state: SharedState,
+}
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 struct SharedState {
     settings: Settings,
     runtime_settings: RuntimeSettings,
@@ -85,7 +83,7 @@ where
         use transition::{state_change_callback, Transition};
 
         let transition = state_change_callback(
-            &(shared_state_mut!().settings.firmware.metadata_path.clone()),
+            &self.shared_state.settings.firmware.metadata_path.clone(),
             self.name(),
         )?;
 
@@ -101,8 +99,8 @@ where
     State<S>: ProgressReporter,
 {
     fn handle_and_report_progress(self) -> Result<StateMachine, failure::Error> {
-        let server = &shared_state_mut!().settings.network.server_address.clone();
-        let firmware = &shared_state_mut!().firmware.clone();
+        let server = self.shared_state.settings.network.server_address.clone();
+        let firmware = self.shared_state.firmware.clone();
         let package_uid = self.package_uid().clone();
         let enter_state = self.report_enter_state_name();
         let leave_state = self.report_leave_state_name();
@@ -137,8 +135,15 @@ where
 }
 
 impl StateMachine {
-    fn new() -> Self {
-        StateMachine::Idle(State(Idle {}))
+    fn new(settings: Settings, runtime_settings: RuntimeSettings, firmware: Metadata) -> Self {
+        StateMachine::Idle(State {
+            inner: Idle {},
+            shared_state: SharedState {
+                settings,
+                runtime_settings,
+                firmware,
+            },
+        })
     }
 
     fn move_to_next_state(self) -> Result<Self, failure::Error> {
@@ -191,11 +196,10 @@ pub fn run(settings: Settings) -> Result<(), failure::Error> {
     if !settings.storage.read_only {
         runtime_settings.enable_persistency();
     }
-
     let firmware = Metadata::from_path(&settings.firmware.metadata_path)?;
-    set_shared_state!(settings, runtime_settings, firmware);
 
-    let agent_machine = actor::Machine::new(StateMachine::new());
+    let agent_machine =
+        actor::Machine::new(StateMachine::new(settings, runtime_settings, firmware));
 
     System::run(|| {
         let machine = agent_machine.start();

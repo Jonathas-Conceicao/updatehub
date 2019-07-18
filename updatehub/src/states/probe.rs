@@ -27,32 +27,34 @@ impl StateChangeImpl for State<Probe> {
         "probe"
     }
 
-    fn handle(self) -> Result<StateMachine, failure::Error> {
+    fn handle(mut self) -> Result<StateMachine, failure::Error> {
         use crate::client::ProbeResponse;
         use chrono::{Duration, Utc};
         use std::thread;
 
-        let server_address = match self.0.server_address.clone() {
-            ServerAddress::Default => shared_state!().settings.network.server_address.clone(),
+        let server_address = match self.inner.server_address.clone() {
+            ServerAddress::Default => self.shared_state.settings.network.server_address.clone(),
             ServerAddress::Custom(s) => s,
         };
 
         let r = loop {
-            let probe = Api::new(&server_address)
-                .probe(&shared_state!().runtime_settings, &shared_state!().firmware);
+            let probe = Api::new(&server_address).probe(
+                &self.shared_state.runtime_settings,
+                &self.shared_state.firmware,
+            );
             if let Err(e) = probe {
                 error!("{}", e);
-                shared_state_mut!().runtime_settings.inc_retries();
+                self.shared_state.runtime_settings.inc_retries();
                 thread::sleep(Duration::seconds(1).to_std().unwrap());
             } else {
-                shared_state_mut!().runtime_settings.clear_retries();
+                self.shared_state.runtime_settings.clear_retries();
                 break probe?;
             }
         };
 
         if let ProbeResponse::ExtraPoll(s) = r {
             info!("Delaying the probing as requested by the server.");
-            shared_state_mut!()
+            self.shared_state
                 .runtime_settings
                 .set_polling_extra_interval(Duration::seconds(s))?;
         };
@@ -62,7 +64,7 @@ impl StateChangeImpl for State<Probe> {
                 debug!("Moving to Idle state as no update is available.");
 
                 // Store timestamp of last polling
-                shared_state_mut!()
+                self.shared_state
                     .runtime_settings
                     .set_last_polling(Utc::now())?;
                 Ok(StateMachine::Idle(self.into()))
@@ -75,13 +77,14 @@ impl StateChangeImpl for State<Probe> {
 
             ProbeResponse::Update(u) => {
                 // Ensure the package is compatible
-                u.compatible_with(&shared_state!().firmware)?;
+                u.compatible_with(&self.shared_state.firmware)?;
                 // Store timestamp of last polling
-                shared_state_mut!()
+                self.shared_state
                     .runtime_settings
                     .set_last_polling(Utc::now())?;
 
-                if Some(u.package_uid()) == shared_state!().runtime_settings.applied_package_uid() {
+                if Some(u.package_uid()) == self.shared_state.runtime_settings.applied_package_uid()
+                {
                     info!(
                         "Not applying the update package. Same package has already been installed."
                     );
@@ -89,9 +92,10 @@ impl StateChangeImpl for State<Probe> {
                     Ok(StateMachine::Idle(self.into()))
                 } else {
                     debug!("Moving to Download state to process the update package.");
-                    Ok(StateMachine::Download(State(Download {
-                        update_package: u,
-                    })))
+                    Ok(StateMachine::Download(State {
+                        inner: Download { update_package: u },
+                        shared_state: self.shared_state,
+                    }))
                 }
             }
         }
@@ -119,11 +123,17 @@ fn update_not_available() {
         .load(tmpfile.to_str().unwrap())
         .unwrap();
     let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-    set_shared_state!(settings, runtime_settings, firmware);
 
-    let machine = StateMachine::Probe(State(Probe {
-        server_address: ServerAddress::Default,
-    }))
+    let machine = StateMachine::Probe(State {
+        inner: Probe {
+            server_address: ServerAddress::Default,
+        },
+        shared_state: crate::states::SharedState {
+            settings,
+            runtime_settings,
+            firmware,
+        },
+    })
     .move_to_next_state();
 
     mock.assert();
@@ -152,11 +162,17 @@ fn update_available() {
         .load(tmpfile.to_str().unwrap())
         .unwrap();
     let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap();
-    set_shared_state!(settings, runtime_settings, firmware);
 
-    let machine = StateMachine::Probe(State(Probe {
-        server_address: ServerAddress::Default,
-    }))
+    let machine = StateMachine::Probe(State {
+        inner: Probe {
+            server_address: ServerAddress::Default,
+        },
+        shared_state: crate::states::SharedState {
+            settings,
+            runtime_settings,
+            firmware,
+        },
+    })
     .move_to_next_state();
 
     mock.assert();
@@ -185,11 +201,17 @@ fn invalid_hardware() {
         .load(tmpfile.to_str().unwrap())
         .unwrap();
     let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::InvalidHardware)).unwrap();
-    set_shared_state!(settings, runtime_settings, firmware);
 
-    let machine = StateMachine::Probe(State(Probe {
-        server_address: ServerAddress::Default,
-    }))
+    let machine = StateMachine::Probe(State {
+        inner: Probe {
+            server_address: ServerAddress::Default,
+        },
+        shared_state: crate::states::SharedState {
+            settings,
+            runtime_settings,
+            firmware,
+        },
+    })
     .move_to_next_state();
 
     mock.assert();
@@ -218,11 +240,17 @@ fn extra_poll_interval() {
         .load(tmpfile.to_str().unwrap())
         .unwrap();
     let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::ExtraPoll)).unwrap();
-    set_shared_state!(settings, runtime_settings, firmware);
 
-    let machine = StateMachine::Probe(State(Probe {
-        server_address: ServerAddress::Default,
-    }))
+    let machine = StateMachine::Probe(State {
+        inner: Probe {
+            server_address: ServerAddress::Default,
+        },
+        shared_state: crate::states::SharedState {
+            settings,
+            runtime_settings,
+            firmware,
+        },
+    })
     .move_to_next_state();
 
     mock.assert();
@@ -273,11 +301,17 @@ fn skip_same_package_uid() {
 
     let settings = Settings::default();
     let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap();
-    set_shared_state!(settings, runtime_settings, firmware);
 
-    let machine = StateMachine::Probe(State(Probe {
-        server_address: ServerAddress::Default,
-    }))
+    let machine = StateMachine::Probe(State {
+        inner: Probe {
+            server_address: ServerAddress::Default,
+        },
+        shared_state: crate::states::SharedState {
+            settings,
+            runtime_settings,
+            firmware,
+        },
+    })
     .move_to_next_state();
 
     mock.assert();
@@ -308,11 +342,17 @@ fn error() {
         .load(tmpfile.to_str().unwrap())
         .unwrap();
     let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-    set_shared_state!(settings, runtime_settings, firmware);
 
-    let machine = StateMachine::Probe(State(Probe {
-        server_address: ServerAddress::Default,
-    }))
+    let machine = StateMachine::Probe(State {
+        inner: Probe {
+            server_address: ServerAddress::Default,
+        },
+        shared_state: crate::states::SharedState {
+            settings,
+            runtime_settings,
+            firmware,
+        },
+    })
     .move_to_next_state();
 
     mock.assert();

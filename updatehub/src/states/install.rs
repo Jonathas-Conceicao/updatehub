@@ -25,7 +25,7 @@ impl TransitionCallback for State<Install> {}
 
 impl ProgressReporter for State<Install> {
     fn package_uid(&self) -> String {
-        self.0.update_package.package_uid()
+        self.inner.update_package.package_uid()
     }
 
     fn report_enter_state_name(&self) -> &'static str {
@@ -62,7 +62,7 @@ impl StateChangeImpl for State<Install> {
     }
 
     fn handle(mut self) -> Result<StateMachine, failure::Error> {
-        let package_uid = self.0.update_package.package_uid();
+        let package_uid = self.inner.update_package.package_uid();
         info!("Installing update: {}", &package_uid);
 
         let installation_set = installation_set::inactive()?;
@@ -73,21 +73,22 @@ impl StateChangeImpl for State<Install> {
         // - verify if the object needs to be installed, accordingly to the install if
         //   different rule.
 
-        let objs = self.0.update_package.objects_mut(installation_set);
+        let download_dir = self.shared_state.settings.update.download_dir.clone();
+        let objs = self.inner.update_package.objects_mut(installation_set);
         objs.iter()
             .try_for_each(object::Installer::check_requirements)?;
         objs.iter_mut().try_for_each(object::Installer::setup)?;
-        objs.iter_mut().try_for_each(|obj| {
-            obj.install(&shared_state!().settings.update.download_dir.clone())?;
+        objs.iter_mut().try_for_each(move |obj| {
+            obj.install(&download_dir)?;
             obj.cleanup()
         })?;
 
         // Ensure we do a probe as soon as possible so full update
         // cycle can be finished.
-        shared_state_mut!().runtime_settings.force_poll()?;
+        self.shared_state.runtime_settings.force_poll()?;
 
         // Avoid installing same package twice.
-        shared_state_mut!()
+        self.shared_state
             .runtime_settings
             .set_applied_package_uid(&package_uid)?;
 
@@ -132,11 +133,17 @@ mod test {
 
         let runtime_settings = RuntimeSettings::default();
         let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-        set_shared_state!(settings, runtime_settings, firmware);
 
-        State(Install {
-            update_package: get_update_package(),
-        })
+        State {
+            inner: Install {
+                update_package: get_update_package(),
+            },
+            shared_state: crate::states::SharedState {
+                settings,
+                runtime_settings,
+                firmware,
+            },
+        }
     }
 
     #[test]
@@ -144,8 +151,8 @@ mod test {
         let machine = StateMachine::Install(fake_install_state()).move_to_next_state();
 
         match machine {
-            Ok(StateMachine::Reboot(_)) => assert_eq!(
-                shared_state!().runtime_settings.applied_package_uid(),
+            Ok(StateMachine::Reboot(s)) => assert_eq!(
+                s.shared_state.runtime_settings.applied_package_uid(),
                 Some(get_update_package().package_uid())
             ),
             Ok(s) => panic!("Invalid success: {:?}", s),
@@ -158,8 +165,8 @@ mod test {
         let machine = StateMachine::Install(fake_install_state()).move_to_next_state();
 
         match machine {
-            Ok(StateMachine::Reboot(_)) => {
-                assert_eq!(shared_state!().runtime_settings.is_polling_forced(), true)
+            Ok(StateMachine::Reboot(s)) => {
+                assert_eq!(s.shared_state.runtime_settings.is_polling_forced(), true)
             }
             Ok(s) => panic!("Invalid success: {:?}", s),
             Err(e) => panic!("Invalid error: {:?}", e),

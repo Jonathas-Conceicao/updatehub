@@ -23,10 +23,18 @@ impl Handler<Request> for super::Machine {
     type Result = MessageResult<Request>;
 
     fn handle(&mut self, _: Request, _: &mut Context<Self>) -> Self::Result {
-        MessageResult(Payload {
-            version: crate::version().to_string(),
-            config: shared_state!().settings.clone(),
-            firmware: shared_state!().firmware.clone(),
-        })
+        if let Some(machine) = self.0.take() {
+            let payload = for_any_state!(machine, s, {
+                Payload {
+                    version: crate::version().to_string(),
+                    config: s.shared_state.settings.clone(),
+                    firmware: s.shared_state.firmware.clone(),
+                }
+            });
+
+            return MessageResult(payload);
+        }
+
+        unreachable!("Failed to take StateMachine's ownership");
     }
 }

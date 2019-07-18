@@ -24,7 +24,10 @@ impl Handler<Request> for super::Machine {
                 match s.handle_download_abort() {
                     r @ Response::InvalidState => MessageResult(r),
                     r @ Response::RequestAccepted => {
-                        self.0 = Some(StateMachine::Idle(State(Idle {})));
+                        self.0 = Some(StateMachine::Idle(State {
+                            inner: Idle {},
+                            shared_state: s.shared_state,
+                        }));
                         MessageResult(r)
                     }
                 }

@@ -15,7 +15,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-#[derive(Debug, Default, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub(crate) struct RuntimeSettings {
     polling: RuntimePolling,
@@ -156,7 +156,7 @@ pub(crate) enum Error {
     IniSerialize(serde_ini::ser::Error),
 }
 
-#[derive(Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "PascalCase")]
 struct RuntimePolling {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -183,7 +183,7 @@ impl Default for RuntimePolling {
     }
 }
 
-#[derive(Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "PascalCase")]
 struct RuntimeUpdate {
     #[serde(rename = "UpgradeToInstallation")]

@@ -24,11 +24,14 @@ impl Handler<Request> for super::Machine {
                 match s.handle_trigger_probe() {
                     r @ Response::InvalidState(_) => MessageResult(r),
                     r @ Response::RequestAccepted(_) => {
-                        self.0 = Some(StateMachine::Probe(State(Probe {
-                            server_address: req
-                                .0
-                                .map_or(ServerAddress::Default, ServerAddress::Custom),
-                        })));
+                        self.0 = Some(StateMachine::Probe(State {
+                            inner: Probe {
+                                server_address: req
+                                    .0
+                                    .map_or(ServerAddress::Default, ServerAddress::Custom),
+                            },
+                            shared_state: s.shared_state,
+                        }));
                         MessageResult(r)
                     }
                 }

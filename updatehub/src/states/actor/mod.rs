@@ -34,9 +34,15 @@ impl Handler<Step> for Machine {
 
     fn handle(&mut self, _req: Step, _ctx: &mut Context<Self>) -> Self::Result {
         if let Some(machine) = self.0.take() {
+            let m_ref = &machine;
+            let shared_state = for_any_state!(m_ref, s, { s.shared_state.clone() });
+
             self.0 = Some(machine.move_to_next_state().unwrap_or_else(|e| {
                 error!("Error: {}. Moving to Idle state.", e);
-                StateMachine::Idle(State(Idle {}))
+                StateMachine::Idle(State {
+                    inner: Idle {},
+                    shared_state,
+                })
             }));
 
             return MessageResult(());

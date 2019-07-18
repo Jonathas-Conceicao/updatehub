@@ -20,7 +20,7 @@ impl TransitionCallback for State<Reboot> {}
 
 impl ProgressReporter for State<Reboot> {
     fn package_uid(&self) -> String {
-        self.0.update_package.package_uid()
+        self.inner.update_package.package_uid()
     }
 
     fn report_enter_state_name(&self) -> &'static str {
@@ -70,11 +70,17 @@ mod test {
         let settings = Settings::default();
         let runtime_settings = RuntimeSettings::default();
         let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-        set_shared_state!(settings, runtime_settings, firmware);
 
-        State(Reboot {
-            update_package: get_update_package(),
-        })
+        State {
+            inner: Reboot {
+                update_package: get_update_package(),
+            },
+            shared_state: crate::states::SharedState {
+                settings,
+                runtime_settings,
+                firmware,
+            },
+        }
     }
 
     fn create_reboot(path: &Path) {
