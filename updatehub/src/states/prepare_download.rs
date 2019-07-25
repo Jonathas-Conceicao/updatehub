@@ -21,7 +21,7 @@ pub(super) struct PrepareDownload {
 
 impl StateChangeImpl for State<PrepareDownload> {
     fn name(&self) -> &'static str {
-        "abort_download"
+        "prepare_download"
     }
 
     fn handle_download_abort(&self) -> download_abort::Response {
