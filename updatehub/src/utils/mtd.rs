@@ -5,11 +5,10 @@
 use failure::format_err;
 use std::{
     fs,
+    io::{BufRead, BufReader},
     path::{Path, PathBuf},
 };
 
-// FIXME: discuss rather this function should be called here, or on
-// package_schema
 pub(crate) fn target_device_from_ubi_volume_name(volume: &str) -> Result<PathBuf, failure::Error> {
     let re = regex::Regex::new(r"^Volume ID:   (\d) \(on ubi(\d)\)$").unwrap();
     let path = fs::read_dir("/dev")?
@@ -42,7 +41,19 @@ pub(crate) fn is_nand(device: &Path) -> Result<bool, failure::Error> {
     unimplemented!("FIXME: impl is_nand")
 }
 
-#[allow(unused_variables)]
 pub(crate) fn target_device_from_mtd_name(name: &str) -> Result<PathBuf, failure::Error> {
-    unimplemented!("FIXME: impl get_target_device_from_mtd_name")
+    let re = regex::Regex::new(r#"^(mtd\d): (\d+) (\d+) "(.*)"$"#).unwrap();
+    let proc = fs::File::open("/proc/mtd")?;
+
+    for line in BufReader::new(proc).lines() {
+        let line = line?;
+        let re_match = re
+            .captures(&line)
+            .ok_or_else(|| format_err!("Unable to extract device match"))?;
+        if &re_match[4] == name {
+            return Ok(PathBuf::from(format!("/dev/{}", &re_match[1])));
+        }
+    }
+
+    Err(format_err!("Unable to find match for mtd device: {}", name))
 }

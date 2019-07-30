@@ -4,7 +4,10 @@
 
 use crate::{
     object::{Info, Installer},
-    utils,
+    utils::{
+        self,
+        definitions::{IdExt, TargetTypeExt},
+    },
 };
 use failure::bail;
 use pkg_schema::{definitions, objects};

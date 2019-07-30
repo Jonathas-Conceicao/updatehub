@@ -7,9 +7,7 @@ use failure::{bail, format_err};
 use std::{io, path::Path, process::Command};
 use sys_mount::{Mount, Unmount, UnmountDrop};
 
-pub(crate) fn find_compress_tarball_kind(
-    file: &Path,
-) -> Result<compress_tools::Kind, failure::Error> {
+pub(crate) fn find_compress_tarball_kind(file: &Path) -> Result<compress_tools::Kind, failure::Error> {
     match infer::Infer::new()
         .get_from_path(file)?
         .ok_or_else(|| format_err!("Unknown type"))?
@@ -53,11 +51,7 @@ pub(crate) fn is_executable_in_path(cmd: &str) -> Result<(), failure::Error> {
     }
 }
 
-pub(crate) fn format(
-    target: &Path,
-    fs: &str,
-    options: &Option<String>,
-) -> Result<(), failure::Error> {
+pub(crate) fn format(target: &Path, fs: &str, options: &Option<String>) -> Result<(), failure::Error> {
     let target = target.display();
     let options = options.clone().unwrap_or_else(|| "".to_string());
 
@@ -74,12 +68,7 @@ pub(crate) fn format(
     Ok(())
 }
 
-pub(crate) fn mount_map<F>(
-    source: &Path,
-    fs: &str,
-    options: &str,
-    f: F,
-) -> Result<(), failure::Error>
+pub(crate) fn mount_map<F>(source: &Path, fs: &str, options: &str, f: F) -> Result<(), failure::Error>
 where
     F: FnOnce(&Path) -> Result<(), failure::Error>,
 {
