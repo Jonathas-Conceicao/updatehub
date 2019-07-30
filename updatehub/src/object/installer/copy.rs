@@ -67,8 +67,14 @@ impl Installer for objects::Copy {
 
             utils::fs::chown(
                 &dest,
-                &self.target_permissions.target_uid,
-                &self.target_permissions.target_gid,
+                self.target_permissions
+                    .target_uid
+                    .as_ref()
+                    .map(|id| id.as_u32()),
+                self.target_permissions
+                    .target_gid
+                    .as_ref()
+                    .map(|id| id.as_u32()),
             )?;
 
             Ok(())
@@ -141,7 +147,11 @@ mod tests {
                     utils::fs::chmod(&file, mode)?;
                 }
 
-                utils::fs::chown(&file, &perm.target_uid, &perm.target_gid)?;
+                utils::fs::chown(
+                    &file,
+                    perm.target_uid.as_ref().map(|id| id.as_u32()),
+                    perm.target_gid.as_ref().map(|id| id.as_u32()),
+                )?;
 
                 Ok(())
             })?;

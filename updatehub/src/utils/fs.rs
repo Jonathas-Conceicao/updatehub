@@ -4,10 +4,7 @@
 
 use easy_process;
 use failure::format_err;
-use pkg_schema::definitions::{
-    target_permissions::{Gid, Uid},
-    Filesystem,
-};
+use pkg_schema::definitions::Filesystem;
 use std::{io, path::Path, process::Command};
 use sys_mount::{Mount, Unmount, UnmountDrop};
 
@@ -127,12 +124,10 @@ pub(crate) fn chmod(path: &Path, mode: u32) -> Result<(), failure::Error> {
     Ok(())
 }
 
-pub(crate) fn chown(path: &Path, uid: &Option<Uid>, gid: &Option<Gid>) -> nix::Result<()> {
+pub(crate) fn chown(path: &Path, uid: Option<u32>, gid: Option<u32>) -> nix::Result<()> {
     nix::unistd::chown(
         path,
-        uid.as_ref()
-            .map(|id| nix::unistd::Uid::from_raw(id.as_u32())),
-        gid.as_ref()
-            .map(|id| nix::unistd::Gid::from_raw(id.as_u32())),
+        uid.map(nix::unistd::Uid::from_raw),
+        gid.map(nix::unistd::Gid::from_raw),
     )
 }
