@@ -26,7 +26,7 @@ impl Installer for objects::Tarball {
         info!("'tarball' handler Install");
 
         let device = self.target.get_target()?;
-        let filesystem = self.filesystem;
+        let filesystem = self.filesystem.to_string();
         let mount_options = &self.mount_options;
         let format_options = &self.target_format.format_options;
         let source = download_dir.join(self.sha256sum());
@@ -36,10 +36,10 @@ impl Installer for objects::Tarball {
         // else we check the remaning size
 
         if self.target_format.should_format {
-            utils::fs::format(&device, filesystem, format_options)?;
+            utils::fs::format(&device, &filesystem, format_options)?;
         }
 
-        utils::fs::mount_map(&device, filesystem, mount_options, |path| {
+        utils::fs::mount_map(&device, &filesystem, mount_options, |path| {
             let dest = path.join(&self.target_path.strip_prefix("/")?);
 
             compress_tools::uncompress(
@@ -88,7 +88,7 @@ mod tests {
         };
 
         // Format the faked device
-        utils::fs::format(&device, definitions::Filesystem::Ext4, &None)?;
+        utils::fs::format(&device, &definitions::Filesystem::Ext4.to_string(), &None)?;
 
         // Generate base copy object
         let mut obj = objects::Tarball {
@@ -107,10 +107,15 @@ mod tests {
         f(&mut obj);
 
         // Setup preinstall structure
-        utils::fs::mount_map(&device, definitions::Filesystem::Ext4, &"", |path| {
-            fs::create_dir(path.join("existing_dir"))?;
-            Ok(())
-        })?;
+        utils::fs::mount_map(
+            &device,
+            &definitions::Filesystem::Ext4.to_string(),
+            &"",
+            |path| {
+                fs::create_dir(path.join("existing_dir"))?;
+                Ok(())
+            },
+        )?;
 
         // Peform Install
         obj.check_requirements()?;
@@ -120,7 +125,7 @@ mod tests {
         // Validade File
         utils::fs::mount_map(
             &device,
-            obj.filesystem,
+            &obj.filesystem.to_string(),
             &obj.mount_options.clone(),
             |path| {
                 let assert_metadata = |p: &Path| -> Result<(), failure::Error> {

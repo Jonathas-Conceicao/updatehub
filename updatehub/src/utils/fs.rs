@@ -3,8 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use easy_process;
-use failure::format_err;
-use pkg_schema::definitions::Filesystem;
+use failure::{bail, format_err};
 use std::{io, path::Path, process::Command};
 use sys_mount::{Mount, Unmount, UnmountDrop};
 
@@ -56,22 +55,19 @@ pub(crate) fn is_executable_in_path(cmd: &str) -> Result<(), failure::Error> {
 
 pub(crate) fn format(
     target: &Path,
-    fs: Filesystem,
+    fs: &str,
     options: &Option<String>,
 ) -> Result<(), failure::Error> {
     let target = target.display();
     let options = options.clone().unwrap_or_else(|| "".to_string());
 
     let cmd = match fs {
-        Filesystem::Jffs2 => format!("flash_erase -j {} {} 0 0", options, target),
-        Filesystem::Ext2 | Filesystem::Ext3 | Filesystem::Ext4 => {
-            format!("mkfs.{} -F {} {}", fs, options, target)
-        }
-        Filesystem::Ubifs => format!("mkfs.{} -y {} {}", fs, options, target),
-        Filesystem::Xfs => format!("mkfs.{} -f {} {}", fs, options, target),
-        Filesystem::Btrfs | Filesystem::Vfat | Filesystem::F2fs => {
-            format!("mkfs.{} {} {}", fs, options, target)
-        }
+        "jffs2" => format!("flash_erase -j {} {} 0 0", options, target),
+        "ext2" | "ext3" | "ext4" => format!("mkfs.{} -F {} {}", fs, options, target),
+        "ubifs" => format!("mkfs.{} -y {} {}", fs, options, target),
+        "xfs" => format!("mkfs.{} -f {} {}", fs, options, target),
+        "btrfs" | "vfat" | "f2fs" => format!("mkfs.{} {} {}", fs, options, target),
+        _ => bail!("File system '{}' is not supported", fs),
     };
 
     easy_process::run(&cmd)?;
@@ -80,7 +76,7 @@ pub(crate) fn format(
 
 pub(crate) fn mount_map<F>(
     source: &Path,
-    fs: Filesystem,
+    fs: &str,
     options: &str,
     f: F,
 ) -> Result<(), failure::Error>
@@ -100,13 +96,13 @@ where
 pub(crate) fn mount(
     source: &Path,
     dest: &Path,
-    fs: Filesystem,
+    fs: &str,
     options: &str,
 ) -> io::Result<UnmountDrop<Mount>> {
     Ok(Mount::new(
         source,
         dest,
-        format!("{}", fs).as_str(),
+        fs,
         sys_mount::MountFlags::empty(),
         Some(options),
     )?

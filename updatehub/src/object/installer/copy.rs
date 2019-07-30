@@ -31,16 +31,16 @@ impl Installer for objects::Copy {
         info!("'copy' handler Install");
 
         let device = self.target_type.get_target()?;
-        let filesystem = self.filesystem;
+        let filesystem = self.filesystem.to_string();
         let mount_options = &self.mount_options;
         let format_options = &self.target_format.format_options;
         let chunk_size = definitions::ChunkSize::default().0;
 
         if self.target_format.should_format {
-            utils::fs::format(&device, filesystem, &format_options)?;
+            utils::fs::format(&device, &filesystem, &format_options)?;
         }
 
-        utils::fs::mount_map(&device, filesystem, mount_options, |path| {
+        utils::fs::mount_map(&device, &filesystem, mount_options, |path| {
             let dest = path.join(&self.target_path);
             let source = download_dir.join(self.sha256sum());
             let mut input = utils::io::timed_buf_reader(chunk_size, fs::File::open(source)?);
@@ -122,7 +122,7 @@ mod tests {
         };
 
         // Format the faked device
-        utils::fs::format(&device, definitions::Filesystem::Ext4, &None)?;
+        utils::fs::format(&device, &definitions::Filesystem::Ext4.to_string(), &None)?;
 
         // Generate the source file
         let download_dir = tempfile::tempdir()?;
@@ -135,26 +135,31 @@ mod tests {
 
         // When needed, create a file inside the mounted device
         if let Some(perm) = original_permissions {
-            utils::fs::mount_map(&device, definitions::Filesystem::Ext4, &"", |path| {
-                let file = path.join(&"original_file");
-                fs::File::create(&file)?.write_all(
-                    &iter::repeat(ORIGINAL_BYTE)
-                        .take(FILE_SIZE)
-                        .collect::<Vec<_>>(),
-                )?;
+            utils::fs::mount_map(
+                &device,
+                &definitions::Filesystem::Ext4.to_string(),
+                &"",
+                |path| {
+                    let file = path.join(&"original_file");
+                    fs::File::create(&file)?.write_all(
+                        &iter::repeat(ORIGINAL_BYTE)
+                            .take(FILE_SIZE)
+                            .collect::<Vec<_>>(),
+                    )?;
 
-                if let Some(mode) = perm.target_mode {
-                    utils::fs::chmod(&file, mode)?;
-                }
+                    if let Some(mode) = perm.target_mode {
+                        utils::fs::chmod(&file, mode)?;
+                    }
 
-                utils::fs::chown(
-                    &file,
-                    perm.target_uid.as_ref().map(|id| id.as_u32()),
-                    perm.target_gid.as_ref().map(|id| id.as_u32()),
-                )?;
+                    utils::fs::chown(
+                        &file,
+                        perm.target_uid.as_ref().map(|id| id.as_u32()),
+                        perm.target_gid.as_ref().map(|id| id.as_u32()),
+                    )?;
 
-                Ok(())
-            })?;
+                    Ok(())
+                },
+            )?;
         }
 
         // Generate base copy object
@@ -184,7 +189,7 @@ mod tests {
         // Validade File
         utils::fs::mount_map(
             &device,
-            obj.filesystem,
+            &obj.filesystem.to_string(),
             &obj.mount_options.clone(),
             |path| {
                 let chunk_size = definitions::ChunkSize::default().0;
