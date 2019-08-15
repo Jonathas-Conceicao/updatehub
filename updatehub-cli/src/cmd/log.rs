@@ -9,9 +9,9 @@ use structopt::StructOpt;
 #[derive(StructOpt)]
 #[structopt(rename_all = "kebab-case")]
 pub(crate) struct Log {
-	/// print the log data 
-	data: Option<String>,
-	/// print the log level
+    /// print the log data
+    data: Option<String>,
+    /// print the log level
     level: Option<String>,
     /// print the log message
     message: Option<String>,
@@ -19,12 +19,11 @@ pub(crate) struct Log {
     time: Option<String>,
 }
 
-pub(crate) fn run() { 
-	display_info();
+pub(crate) fn run() {
+    display_info();
 }
 fn display_info() -> Result<(), failure::Error> {
-	let body = reqwest::get("http://localhost:8080/log")?
-    .text()?;
+    let body = reqwest::get("http://localhost:8080/log")?.text()?;
 
     println!("body = {:?}", body);
 
