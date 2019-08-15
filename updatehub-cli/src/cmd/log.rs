@@ -20,7 +20,7 @@ pub(crate) struct Log {
 }
 
 pub(crate) fn run() {
-    display_info();
+    display_info().unwrap();
 }
 fn display_info() -> Result<(), failure::Error> {
     let body = reqwest::get("http://localhost:8080/log")?.text()?;

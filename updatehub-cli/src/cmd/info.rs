@@ -18,7 +18,7 @@ pub(crate) struct AgentInfo {
 }
 
 pub(crate) fn run() {
-    display_info();
+    display_info().unwrap();
 }
 
 fn display_info() -> Result<(), failure::Error> {
