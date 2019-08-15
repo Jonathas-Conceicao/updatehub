@@ -22,6 +22,7 @@ impl StateChangeImpl for State<Park> {
 
     fn handle(self, _: &mut SharedState) -> Result<StateMachine, failure::Error> {
         debug!("Staying on Park state.");
+        std::thread::sleep(std::time::Duration::from_secs(1));
         Ok(StateMachine::Park(self))
     }
 }

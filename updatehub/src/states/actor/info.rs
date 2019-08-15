@@ -10,7 +10,6 @@ pub(crate) struct Request;
 
 #[derive(Serialize)]
 pub(crate) struct Response {
-    #[serde(skip)]
     pub(crate) state: String,
     pub(crate) version: String,
     pub(crate) config: Settings,
