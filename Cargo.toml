@@ -2,6 +2,7 @@
 
 members = [
     "updatehub",
+    "updatehub-common",
     "updatehub-package-schema",
 ]
 
