@@ -3,25 +3,28 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #![allow(clippy::trivially_copy_pass_by_ref)]
-pub mod ser {
+pub(crate) mod ser {
     use chrono::Duration;
     use serde::Serializer;
 
-    pub fn bool_to_string<S>(v: &bool, serializer: S) -> Result<S::Ok, S::Error>
+    pub(crate) fn bool_to_string<S>(v: &bool, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         serializer.serialize_str(if *v { "true" } else { "false" })
     }
 
-    pub fn duration_option_to_int<S>(v: &Option<Duration>, serializer: S) -> Result<S::Ok, S::Error>
+    pub(crate) fn duration_option_to_int<S>(
+        v: &Option<Duration>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         serializer.serialize_i64(v.unwrap_or(Duration::seconds(0)).num_seconds())
     }
 
-    pub fn duration_to_int<S>(v: &Duration, serializer: S) -> Result<S::Ok, S::Error>
+    pub(crate) fn duration_to_int<S>(v: &Duration, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -29,11 +32,11 @@ pub mod ser {
     }
 }
 
-pub mod de {
+pub(crate) mod de {
     use chrono::Duration;
     use serde::{de, Deserialize, Deserializer};
 
-    pub fn duration_from_str<'de, D>(deserializer: D) -> Result<Duration, D::Error>
+    pub(crate) fn duration_from_str<'de, D>(deserializer: D) -> Result<Duration, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -43,7 +46,7 @@ pub mod de {
         Ok(Duration::from_std(parse(&s).map_err(de::Error::custom)?).map_err(de::Error::custom)?)
     }
 
-    pub fn octal_from_str<'de, D>(deserializer: D) -> Result<u32, D::Error>
+    pub(crate) fn octal_from_str<'de, D>(deserializer: D) -> Result<u32, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -51,7 +54,7 @@ pub mod de {
         Ok(u32::from_str_radix(&s, 8).map_err(de::Error::custom)?)
     }
 
-    pub fn duration_from_int<'de, D>(deserializer: D) -> Result<Option<Duration>, D::Error>
+    pub(crate) fn duration_from_int<'de, D>(deserializer: D) -> Result<Option<Duration>, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -63,7 +66,7 @@ pub mod de {
         })
     }
 
-    pub fn bool_from_str<'de, D>(deserializer: D) -> Result<bool, D::Error>
+    pub(crate) fn bool_from_str<'de, D>(deserializer: D) -> Result<bool, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -73,7 +76,7 @@ pub mod de {
         bool::from_str(&s).map_err(de::Error::custom)
     }
 
-    pub fn vec_from_str<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
+    pub(crate) fn vec_from_str<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -83,7 +86,7 @@ pub mod de {
             .collect())
     }
 
-    pub fn supported_hardware_any<'de, D>(deserializer: D) -> Result<(), D::Error>
+    pub(crate) fn supported_hardware_any<'de, D>(deserializer: D) -> Result<(), D::Error>
     where
         D: Deserializer<'de>,
     {

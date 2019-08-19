@@ -40,6 +40,7 @@ structopt = "0.2"
 sys-mount = "1"
 tempfile = "3"
 timeout-readwrite = "0.2"
+updatehub-common = { path = "../updatehub-common" }
 walkdir = "2"
 
 [build-dependencies]
