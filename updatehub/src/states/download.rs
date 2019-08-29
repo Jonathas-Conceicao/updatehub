@@ -4,7 +4,8 @@
 
 use super::{
     actor::{self, download_abort, SharedState},
-    Idle, Install, ProgressReporter, State, StateChangeImpl, StateMachine, TransitionCallback,
+    EntryPoint, Install, ProgressReporter, State, StateChangeImpl, StateMachine,
+    TransitionCallback,
 };
 use crate::{
     firmware::installation_set,
@@ -25,7 +26,7 @@ pub(super) struct Download {
     pub(super) download_chan: mpsc::Receiver<Vec<Result<(), failure::Error>>>,
 }
 
-create_state_step!(Download => Idle);
+create_state_step!(Download => EntryPoint);
 create_state_step!(Download => Install(update_package));
 
 impl TransitionCallback for State<Download> {}

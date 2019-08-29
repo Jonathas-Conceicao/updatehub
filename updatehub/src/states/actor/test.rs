@@ -87,7 +87,7 @@ fn setup_actor(kind: Setup, probe: Probe) -> (Addr<Machine>, mockito::Mock, Sett
         // We use the actix::Actor::start here instead of the Machine::start in order to not start
         // the stepper and thus have control of how many steps are been sent to the Machine
         actix::Actor::start(Machine::new(
-            StateMachine::Idle(State(Idle {})),
+            StateMachine::EntryPoint(State(EntryPoint {})),
             settings,
             runtime_settings,
             firmware,
@@ -106,7 +106,7 @@ fn info_request() {
     Arbiter::spawn(
         addr.send(info::Request)
             .map(move |response| {
-                assert_eq!(response.state, "idle");
+                assert_eq!(response.state, "entry_point");
                 assert_eq!(response.version, crate::version().to_string());
                 assert_eq!(response.config, settings);
                 assert_eq!(response.firmware, firmware);
@@ -128,7 +128,7 @@ fn step_sequence() {
     Arbiter::spawn(
         addr.send(info::Request)
             .map(move |response| {
-                assert_eq!(response.state, "idle");
+                assert_eq!(response.state, "entry_point");
                 addr
             })
             .and_then(|addr| {
@@ -149,7 +149,7 @@ fn step_sequence() {
                 let f1 = addr.send(Step);
                 let f2 = addr
                     .send(info::Request)
-                    .map(|res| assert_eq!(res.state, "idle"));
+                    .map(|res| assert_eq!(res.state, "entry_point"));
                 f1.then(|_| f2).then(|_| future::ok(addr))
             })
             .then(move |_| {
@@ -185,7 +185,7 @@ fn download_abort() {
                 let f1 = addr.send(download_abort::Request);
                 let f2 = addr
                     .send(info::Request)
-                    .map(|res| assert_eq!(res.state, "idle"));
+                    .map(|res| assert_eq!(res.state, "entry_point"));
                 f1.then(|_| f2).then(|_| future::ok(addr))
             })
             .then(move |_| {

@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    Idle, Poll, PrepareDownload, State, StateChangeImpl, StateMachine,
+    EntryPoint, Poll, PrepareDownload, State, StateChangeImpl, StateMachine,
 };
 use crate::client::{Api, ProbeResponse};
 use chrono::{Duration, Utc};
@@ -13,7 +13,7 @@ use slog_scope::{debug, error, info};
 #[derive(Debug, PartialEq)]
 pub(super) struct Probe;
 
-create_state_step!(Probe => Idle);
+create_state_step!(Probe => EntryPoint);
 create_state_step!(Probe => Poll);
 
 /// Implements the state change for State<Probe>.
@@ -49,12 +49,12 @@ impl StateChangeImpl for State<Probe> {
 
         match probe {
             ProbeResponse::NoUpdate => {
-                debug!("Moving to Idle state as no update is available.");
+                debug!("Moving to EntryPoint state as no update is available.");
 
                 // Store timestamp of last polling
                 shared_state.runtime_settings.set_last_polling(Utc::now())?;
                 Ok((
-                    StateMachine::Idle(self.into()),
+                    StateMachine::EntryPoint(self.into()),
                     actor::StepTransition::Immediate,
                 ))
             }
@@ -82,9 +82,11 @@ impl StateChangeImpl for State<Probe> {
                     info!(
                         "Not applying the update package. Same package has already been installed."
                     );
-                    debug!("Moving to Idle state as this update package is already installed.");
+                    debug!(
+                        "Moving to EntryPoint state as this update package is already installed."
+                    );
                     Ok((
-                        StateMachine::Idle(self.into()),
+                        StateMachine::EntryPoint(self.into()),
                         actor::StepTransition::Immediate,
                     ))
                 } else {
@@ -140,7 +142,7 @@ mod tests {
 
         mock.assert();
 
-        assert_state!(machine, Idle);
+        assert_state!(machine, EntryPoint);
     }
 
     #[test]
@@ -273,7 +275,7 @@ mod tests {
 
         mock.assert();
 
-        assert_state!(machine, Idle);
+        assert_state!(machine, EntryPoint);
     }
 
     #[test]
@@ -307,6 +309,6 @@ mod tests {
 
         mock.assert();
 
-        assert_state!(machine, Idle);
+        assert_state!(machine, EntryPoint);
     }
 }

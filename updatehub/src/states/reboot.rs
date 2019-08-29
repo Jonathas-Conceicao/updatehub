@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    Idle, ProgressReporter, State, StateChangeImpl, StateMachine, TransitionCallback,
+    EntryPoint, ProgressReporter, State, StateChangeImpl, StateMachine, TransitionCallback,
 };
 use crate::update_package::UpdatePackage;
 
@@ -16,7 +16,7 @@ pub(super) struct Reboot {
     pub(super) update_package: UpdatePackage,
 }
 
-create_state_step!(Reboot => Idle);
+create_state_step!(Reboot => EntryPoint);
 
 impl TransitionCallback for State<Reboot> {}
 
@@ -52,7 +52,7 @@ impl StateChangeImpl for State<Reboot> {
             );
         }
         Ok((
-            StateMachine::Idle(self.into()),
+            StateMachine::EntryPoint(self.into()),
             actor::StepTransition::Immediate,
         ))
     }
@@ -127,7 +127,7 @@ mod test {
             .unwrap()
             .0;
 
-        assert_state!(machine, Idle);
+        assert_state!(machine, EntryPoint);
     }
 
     #[test]

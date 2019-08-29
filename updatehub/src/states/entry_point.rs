@@ -9,16 +9,16 @@ use super::{
 use slog_scope::debug;
 
 #[derive(Debug, PartialEq)]
-pub(super) struct Idle {}
+pub(super) struct EntryPoint {}
 
-/// Implements the state change for `State<Idle>`. It has two
+/// Implements the state change for `State<EntryPoint>`. It has two
 /// possibilities:
 ///
-/// If polling is disabled it stays in `State<Idle>`, otherwise, it moves
+/// If polling is disabled it stays in `State<EntryPoint>`, otherwise, it moves
 /// to `State<Poll>` state.
-impl StateChangeImpl for State<Idle> {
+impl StateChangeImpl for State<EntryPoint> {
     fn name(&self) -> &'static str {
-        "idle"
+        "entry_point"
     }
 
     fn handle_trigger_probe(&self) -> actor::probe::Response {
@@ -33,7 +33,7 @@ impl StateChangeImpl for State<Idle> {
         shared_state.runtime_settings.reset_transient_settings();
 
         if !shared_state.settings.polling.enabled {
-            debug!("Polling is disabled, staying on Idle state.");
+            debug!("Polling is disabled, staying on EntryPoint state.");
             return Ok((
                 StateMachine::Park(self.into()),
                 actor::StepTransition::Immediate,
@@ -48,8 +48,8 @@ impl StateChangeImpl for State<Idle> {
     }
 }
 
-create_state_step!(Idle => Park);
-create_state_step!(Idle => Poll);
+create_state_step!(EntryPoint => Park);
+create_state_step!(EntryPoint => Poll);
 
 #[test]
 fn polling_disable() {
@@ -66,7 +66,7 @@ fn polling_disable() {
         firmware,
     };
 
-    let machine = StateMachine::Idle(State(Idle {}))
+    let machine = StateMachine::EntryPoint(State(EntryPoint {}))
         .move_to_next_state(&mut shared_state)
         .unwrap()
         .0;
@@ -89,7 +89,7 @@ fn polling_enabled() {
         firmware,
     };
 
-    let machine = StateMachine::Idle(State(Idle {}))
+    let machine = StateMachine::EntryPoint(State(EntryPoint {}))
         .move_to_next_state(&mut shared_state)
         .unwrap()
         .0;

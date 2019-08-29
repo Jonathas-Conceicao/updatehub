@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    Idle, State, StateChangeImpl, StateMachine,
+    EntryPoint, State, StateChangeImpl, StateMachine,
 };
 
 use derivative::Derivative;
@@ -28,9 +28,9 @@ impl StateChangeImpl for State<Error> {
     ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
         error!("Error state reached: {:?}", self.0.error);
 
-        info!("Returning to idle state");
+        info!("Returning to entry_point state");
         Ok((
-            StateMachine::Idle(State(Idle {})),
+            StateMachine::EntryPoint(State(EntryPoint {})),
             actor::StepTransition::Immediate,
         ))
     }

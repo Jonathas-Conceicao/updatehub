@@ -6,8 +6,8 @@
 mod macros;
 pub(crate) mod actor;
 mod download;
+mod entry_point;
 mod error;
-mod idle;
 pub(crate) mod install;
 mod park;
 mod poll;
@@ -17,8 +17,8 @@ mod reboot;
 mod transition;
 
 use self::{
-    download::Download, error::Error, idle::Idle, install::Install, park::Park, poll::Poll,
-    prepare_download::PrepareDownload, probe::Probe, reboot::Reboot,
+    download::Download, entry_point::EntryPoint, error::Error, install::Install, park::Park,
+    poll::Poll, prepare_download::PrepareDownload, probe::Probe, reboot::Reboot,
 };
 use crate::{firmware::Metadata, http_api, runtime_settings::RuntimeSettings, settings::Settings};
 use actix::System;
@@ -40,7 +40,7 @@ trait StateChangeImpl {
     }
 }
 
-trait TransitionCallback: StateChangeImpl + Into<State<Idle>> {}
+trait TransitionCallback: StateChangeImpl + Into<State<EntryPoint>> {}
 
 trait ProgressReporter: TransitionCallback {
     fn package_uid(&self) -> String;
@@ -56,7 +56,7 @@ where
 #[derive(Debug, PartialEq)]
 enum StateMachine {
     Park(State<Park>),
-    Idle(State<Idle>),
+    EntryPoint(State<EntryPoint>),
     Poll(State<Poll>),
     Probe(State<Probe>),
     PrepareDownload(State<PrepareDownload>),
@@ -82,7 +82,7 @@ where
         match transition {
             Transition::Continue => Ok(self.handle_and_report_progress(shared_state)?),
             Transition::Cancel => Ok((
-                StateMachine::Idle(self.into()),
+                StateMachine::EntryPoint(self.into()),
                 actor::StepTransition::Immediate,
             )),
         }
@@ -134,7 +134,7 @@ where
 
 impl StateMachine {
     fn new() -> Self {
-        StateMachine::Idle(State(Idle {}))
+        StateMachine::EntryPoint(State(EntryPoint {}))
     }
 
     fn move_to_next_state(
@@ -144,7 +144,7 @@ impl StateMachine {
         match self {
             StateMachine::Error(s) => s.handle(shared_state),
             StateMachine::Park(s) => s.handle(shared_state),
-            StateMachine::Idle(s) => s.handle(shared_state),
+            StateMachine::EntryPoint(s) => s.handle(shared_state),
             StateMachine::Poll(s) => s.handle(shared_state),
             StateMachine::Probe(s) => s.handle(shared_state),
             StateMachine::PrepareDownload(s) => s.handle(shared_state),
@@ -161,7 +161,7 @@ impl StateMachine {
         match self {
             StateMachine::Error(s) => f(s),
             StateMachine::Park(s) => f(s),
-            StateMachine::Idle(s) => f(s),
+            StateMachine::EntryPoint(s) => f(s),
             StateMachine::Poll(s) => f(s),
             StateMachine::Probe(s) => f(s),
             StateMachine::PrepareDownload(s) => f(s),
@@ -179,15 +179,15 @@ impl StateMachine {
 /// below diagram:
 ///
 /// ```text
-///           .--------------.
-///           |              v
-/// Park <- Idle -> Poll -> Probe -> Download -> Install -> Reboot
-///           ^      ^        '          '          '
-///           '      '        '          '          '
-///           '      `--------'          '          '
-///           `---------------'          '          '
-///           `--------------------------'          '
-///           `-------------------------------------'
+///             .-------------------.
+///             |                   v
+/// Park <- EntryPoint -> Poll -> Probe -> Download -> Install -> Reboot
+///             ^          ^        '          '          '
+///             '          '        '          '          '
+///             '          `--------'          '          '
+///             `-------------------'          '          '
+///             `------------------------------'          '
+///             `-----------------------------------------'
 /// ```
 ///
 /// # Example

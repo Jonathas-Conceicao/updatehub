@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    Idle, ProgressReporter, Reboot, State, StateChangeImpl, StateMachine, TransitionCallback,
+    EntryPoint, ProgressReporter, Reboot, State, StateChangeImpl, StateMachine, TransitionCallback,
 };
 use crate::{
     firmware::installation_set,
@@ -18,7 +18,7 @@ pub(super) struct Install {
     pub(super) update_package: UpdatePackage,
 }
 
-create_state_step!(Install => Idle);
+create_state_step!(Install => EntryPoint);
 create_state_step!(Install => Reboot(update_package));
 
 impl TransitionCallback for State<Install> {}
