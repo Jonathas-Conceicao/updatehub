@@ -2,11 +2,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+use super::error::Result;
 use crate::object::Installer;
 use pkg_schema::objects;
 
 impl Installer for objects::Test {
-    fn install(&self, _: &std::path::Path) -> Result<(), failure::Error> {
+    fn install(&self, _: &std::path::Path) -> Result<()> {
         Ok(())
     }
 }

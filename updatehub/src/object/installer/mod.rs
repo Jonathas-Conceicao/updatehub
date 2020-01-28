@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 mod copy;
+mod error;
 mod flash;
 mod imxkobs;
 mod raw;
@@ -10,42 +11,44 @@ mod tarball;
 mod test;
 mod ubifs;
 
+pub use error::Error;
+pub(crate) use error::Result;
 use pkg_schema::Object;
 use slog_scope::debug;
 
 pub(crate) trait Installer {
-    fn check_requirements(&self) -> Result<(), failure::Error> {
+    fn check_requirements(&self) -> Result<()> {
         debug!("running default check_requirements");
         Ok(())
     }
 
-    fn setup(&mut self) -> Result<(), failure::Error> {
+    fn setup(&mut self) -> Result<()> {
         debug!("running default setup");
         Ok(())
     }
 
-    fn cleanup(&mut self) -> Result<(), failure::Error> {
+    fn cleanup(&mut self) -> Result<()> {
         debug!("running default cleanup");
         Ok(())
     }
 
-    fn install(&self, download_dir: &std::path::Path) -> Result<(), failure::Error>;
+    fn install(&self, download_dir: &std::path::Path) -> Result<()>;
 }
 
 impl Installer for Object {
-    fn check_requirements(&self) -> Result<(), failure::Error> {
+    fn check_requirements(&self) -> Result<()> {
         for_any_object!(self, o, { o.check_requirements() })
     }
 
-    fn setup(&mut self) -> Result<(), failure::Error> {
+    fn setup(&mut self) -> Result<()> {
         for_any_object!(self, o, { o.setup() })
     }
 
-    fn install(&self, download_dir: &std::path::Path) -> Result<(), failure::Error> {
+    fn install(&self, download_dir: &std::path::Path) -> Result<()> {
         for_any_object!(self, o, { o.install(download_dir) })
     }
 
-    fn cleanup(&mut self) -> Result<(), failure::Error> {
+    fn cleanup(&mut self) -> Result<()> {
         for_any_object!(self, o, { o.cleanup() })
     }
 }
@@ -67,7 +70,7 @@ mod tests {
         pub static ref SERIALIZE: Arc<Mutex<()>> = Arc::new(Mutex::default());
     }
 
-    fn create_echo_bin(bin: &Path, output: &Path) -> Result<(), failure::Error> {
+    fn create_echo_bin(bin: &Path, output: &Path) -> std::io::Result<()> {
         let mut file = std::fs::File::create(bin)?;
         file.write_all(
             format!(
@@ -82,7 +85,7 @@ mod tests {
         Ok(())
     }
 
-    pub fn create_echo_bins(bins: &[&str]) -> Result<(TempDir, PathBuf), failure::Error> {
+    pub fn create_echo_bins(bins: &[&str]) -> std::io::Result<(TempDir, PathBuf)> {
         let mocks = tempfile::tempdir()?;
         let mocks_dir = mocks.path();
         let calls = mocks_dir.join("calls");

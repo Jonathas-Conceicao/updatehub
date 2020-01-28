@@ -5,6 +5,7 @@
 use super::{
     actor::{self, SharedState},
     Idle, ProgressReporter, State, StateChangeImpl, StateMachine, TransitionCallback,
+    TransitionError,
 };
 use crate::update_package::UpdatePackage;
 
@@ -43,7 +44,7 @@ impl StateChangeImpl for State<Reboot> {
     async fn handle(
         self,
         _: &mut SharedState,
-    ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
+    ) -> Result<(StateMachine, actor::StepTransition), TransitionError> {
         info!("Triggering reboot");
         let output = easy_process::run("reboot")?;
         if !output.stdout.is_empty() || !output.stderr.is_empty() {

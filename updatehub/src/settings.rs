@@ -5,7 +5,7 @@
 use crate::serde_helpers::{de, ser};
 
 use chrono::Duration;
-use failure::Fail;
+use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 use serde_ini;
 use slog_scope::{debug, error};
@@ -33,7 +33,7 @@ impl Settings {
     /// Loads the settings from the filesystem. If
     /// `/etc/updatehub.conf` does not exists, it uses the default
     /// settings.
-    pub fn load() -> Result<Self, failure::Error> {
+    pub fn load() -> Result<Self, Error> {
         use std::{fs::File, io::Read, path::Path};
 
         let path = Path::new(SYSTEM_SETTINGS_PATH);
@@ -57,14 +57,14 @@ impl Settings {
     // This parses the configuration file, taking into account the
     // needed validations for all fields, and returns either `Self` or
     // `Err`.
-    fn parse(content: &str) -> Result<Self, failure::Error> {
+    fn parse(content: &str) -> Result<Self, Error> {
         let settings = serde_ini::from_str::<Self>(content)?;
 
         if settings.polling.interval < Duration::seconds(60) {
             error!(
                 "Invalid setting for polling interval. The interval cannot be less than 60 seconds"
             );
-            return Err(Error::InvalidInterval.into());
+            return Err(Error::InvalidInterval);
         }
 
         if !&settings.network.server_address.starts_with("http://")
@@ -73,24 +73,22 @@ impl Settings {
             error!(
                 "Invalid setting for server address. The server address must use the protocol prefix"
             );
-            return Err(Error::InvalidServerAddress.into());
+            return Err(Error::InvalidServerAddress);
         }
 
         Ok(settings)
     }
 }
 
-#[derive(Debug, Fail)]
+#[derive(Debug, Display, From)]
 pub enum Error {
-    #[cause]
-    #[fail(display = "IO error")]
+    #[display(fmt = "IO error: {}", _0)]
     Io(io::Error),
-    #[cause]
-    #[fail(display = "Invalid INI fail")]
+    #[display(fmt = "Invalid INI fail: {}", _0)]
     Ini(serde_ini::de::Error),
-    #[fail(display = "Invalid interval")]
+    #[display(fmt = "Invalid interval")]
     InvalidInterval,
-    #[fail(display = "Invalid server address")]
+    #[display(fmt = "Invalid server address")]
     InvalidServerAddress,
 }
 

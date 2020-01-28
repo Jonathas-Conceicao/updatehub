@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::states::actor;
+use crate::{error::Result, states::actor};
 use actix_web::{web, Error, HttpRequest, HttpResponse, Responder};
 use serde::Serialize;
 use serde_json::json;
@@ -18,14 +18,14 @@ impl API {
             .route("/update/download/abort", web::post().to(API::download_abort));
     }
 
-    async fn info(agent: web::Data<API>) -> Result<HttpResponse, failure::Error> {
+    async fn info(agent: web::Data<API>) -> Result<HttpResponse> {
         Ok(HttpResponse::Ok().json(agent.0.send(actor::info::Request).await?))
     }
 
     async fn probe(
         agent: web::Data<API>,
         server_address: Option<String>,
-    ) -> Result<actor::probe::Response, failure::Error> {
+    ) -> Result<actor::probe::Response> {
         Ok(agent.0.send(actor::probe::Request(server_address)).await?)
     }
 
@@ -33,9 +33,7 @@ impl API {
         HttpResponse::Ok().json(crate::logger::buffer())
     }
 
-    async fn download_abort(
-        agent: web::Data<API>,
-    ) -> Result<actor::download_abort::Response, failure::Error> {
+    async fn download_abort(agent: web::Data<API>) -> Result<actor::download_abort::Response> {
         Ok(agent.0.send(actor::download_abort::Request).await?)
     }
 }

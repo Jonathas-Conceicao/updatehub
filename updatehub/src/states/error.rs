@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    Idle, State, StateChangeImpl, StateMachine,
+    Idle, State, StateChangeImpl, StateMachine, TransitionError,
 };
 
 use derivative::Derivative;
@@ -14,7 +14,7 @@ use slog_scope::{error, info};
 #[derivative(Debug, PartialEq)]
 pub(super) struct Error {
     #[derivative(PartialEq = "ignore")]
-    error: failure::Error,
+    error: TransitionError,
 }
 
 #[async_trait::async_trait]
@@ -26,7 +26,7 @@ impl StateChangeImpl for State<Error> {
     async fn handle(
         self,
         _: &mut SharedState,
-    ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
+    ) -> Result<(StateMachine, actor::StepTransition), TransitionError> {
         error!("Error state reached: {:?}", self.0.error);
 
         info!("Returning to idle state");
@@ -34,8 +34,8 @@ impl StateChangeImpl for State<Error> {
     }
 }
 
-impl From<failure::Error> for StateMachine {
-    fn from(error: failure::Error) -> StateMachine {
+impl From<TransitionError> for StateMachine {
+    fn from(error: TransitionError) -> StateMachine {
         StateMachine::Error(State(Error { error }))
     }
 }

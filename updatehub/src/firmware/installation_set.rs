@@ -4,7 +4,6 @@
 
 use crate::firmware::hook::run_script;
 
-use failure::bail;
 use std::{fmt, result, str::FromStr};
 
 const GET_SCRIPT: &str = "updatehub-active-get";
@@ -17,13 +16,13 @@ pub enum Set {
 }
 
 impl FromStr for Set {
-    type Err = failure::Error;
+    type Err = super::Error;
 
     fn from_str(s: &str) -> result::Result<Self, Self::Err> {
         match s.parse::<u8>() {
             Ok(0) => Ok(Set::A),
             Ok(1) => Ok(Set::B),
-            Ok(v) => bail!("{} is a invalid value. The only know ones are 0 or 1", v),
+            Ok(v) => Err(super::Error::InvalidInstallSet(v)),
             Err(e) => Err(e.into()),
         }
     }
@@ -42,18 +41,18 @@ impl fmt::Display for Set {
     }
 }
 
-pub fn active() -> Result<Set, failure::Error> {
+pub fn active() -> Result<Set, super::Error> {
     Ok(run_script(GET_SCRIPT)?.parse()?)
 }
 
-pub fn inactive() -> Result<Set, failure::Error> {
+pub fn inactive() -> Result<Set, super::Error> {
     match active()? {
         Set::A => Ok(Set::B),
         Set::B => Ok(Set::A),
     }
 }
 
-pub fn swap_active() -> Result<(), failure::Error> {
+pub fn swap_active() -> Result<(), super::Error> {
     let _ = run_script(&format!("{} {}", SET_SCRIPT, inactive()?))?;
     Ok(())
 }

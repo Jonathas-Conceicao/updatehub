@@ -9,7 +9,8 @@ use crate::{
 };
 
 use crypto_hash::{hex_digest, Algorithm};
-use failure::Fail;
+
+use derive_more::{Display, From};
 use pkg_schema::Object;
 use serde::Deserialize;
 use serde_json;
@@ -40,14 +41,18 @@ pub(crate) struct UpdatePackage {
     raw: String,
 }
 
-#[derive(Fail, Debug)]
-pub(crate) enum UpdatePackageError {
-    #[fail(display = "Incompatible with hardware: {}", _0)]
+#[derive(Debug, Display, From)]
+pub enum UpdatePackageError {
+    #[display(fmt = "Json parsing error: {}", _0)]
+    JsonParsing(serde_json::Error),
+
+    #[display(fmt = "Incompatible with hardware: {}", _0)]
+    #[from(ignore)]
     IncompatibleHardware(String),
 }
 
 impl UpdatePackage {
-    pub(crate) fn parse(content: &str) -> Result<Self, failure::Error> {
+    pub(crate) fn parse(content: &str) -> Result<Self, UpdatePackageError> {
         let mut update_package = serde_json::from_str::<Self>(content)?;
         update_package.raw = content.into();
 
@@ -58,7 +63,7 @@ impl UpdatePackage {
         hex_digest(Algorithm::SHA256, self.raw.as_bytes())
     }
 
-    pub(crate) fn compatible_with(&self, firmware: &Metadata) -> Result<(), failure::Error> {
+    pub(crate) fn compatible_with(&self, firmware: &Metadata) -> Result<(), UpdatePackageError> {
         self.supported_hardware.compatible_with(&firmware.hardware)
     }
 

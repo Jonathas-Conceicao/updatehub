@@ -6,6 +6,7 @@
 
 mod build_info;
 mod client;
+mod error;
 mod firmware;
 mod http_api;
 pub mod logger;
@@ -18,4 +19,9 @@ mod states;
 mod update_package;
 mod utils;
 
-pub use crate::{build_info::version, settings::Settings, states::run};
+pub use crate::{
+    build_info::version,
+    error::{Error, Result},
+    settings::Settings,
+    states::run,
+};

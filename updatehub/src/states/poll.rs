@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    Probe, State, StateChangeImpl, StateMachine,
+    Probe, State, StateChangeImpl, StateMachine, TransitionError,
 };
 use chrono::{DateTime, Duration, Utc};
 use rand::Rng;
@@ -27,7 +27,7 @@ impl StateChangeImpl for State<Poll> {
     async fn handle(
         self,
         shared_state: &mut SharedState,
-    ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
+    ) -> Result<(StateMachine, actor::StepTransition), TransitionError> {
         let current_time: DateTime<Utc> = Utc::now();
 
         if shared_state.runtime_settings.is_polling_forced() {

@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    State, StateChangeImpl, StateMachine,
+    State, StateChangeImpl, StateMachine, TransitionError,
 };
 
 use slog_scope::debug;
@@ -27,7 +27,7 @@ impl StateChangeImpl for State<Park> {
     async fn handle(
         self,
         _: &mut SharedState,
-    ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
+    ) -> Result<(StateMachine, actor::StepTransition), TransitionError> {
         debug!("Staying on Park state.");
         Ok((StateMachine::Park(self), actor::StepTransition::Never))
     }
