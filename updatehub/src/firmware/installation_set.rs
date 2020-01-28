@@ -4,7 +4,7 @@
 
 use crate::firmware::hook::run_script;
 
-use std::{fmt, result, str::FromStr};
+use std::{fmt, str::FromStr};
 
 const GET_SCRIPT: &str = "updatehub-active-get";
 const SET_SCRIPT: &str = "updatehub-active-set";
@@ -18,7 +18,7 @@ pub enum Set {
 impl FromStr for Set {
     type Err = super::Error;
 
-    fn from_str(s: &str) -> result::Result<Self, Self::Err> {
+    fn from_str(s: &str) -> super::Result<Self> {
         match s.parse::<u8>() {
             Ok(0) => Ok(Set::A),
             Ok(1) => Ok(Set::B),
@@ -41,18 +41,18 @@ impl fmt::Display for Set {
     }
 }
 
-pub fn active() -> Result<Set, super::Error> {
+pub fn active() -> super::Result<Set> {
     Ok(run_script(GET_SCRIPT)?.parse()?)
 }
 
-pub fn inactive() -> Result<Set, super::Error> {
+pub fn inactive() -> super::Result<Set> {
     match active()? {
         Set::A => Ok(Set::B),
         Set::B => Ok(Set::A),
     }
 }
 
-pub fn swap_active() -> Result<(), super::Error> {
+pub fn swap_active() -> super::Result<()> {
     let _ = run_script(&format!("{} {}", SET_SCRIPT, inactive()?))?;
     Ok(())
 }

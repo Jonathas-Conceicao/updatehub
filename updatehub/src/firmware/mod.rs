@@ -22,6 +22,8 @@ const HARDWARE_HOOK: &str = "hardware";
 const DEVICE_IDENTITY_DIR: &str = "device-identity.d";
 const DEVICE_ATTRIBUTES_DIR: &str = "device-attributes.d";
 
+pub type Result<T> = std::result::Result<T, Error>;
+
 #[derive(Debug, Display, From)]
 pub enum Error {
     #[display(fmt = "Invalid product UID")]
@@ -69,7 +71,7 @@ pub struct Metadata {
 }
 
 impl Metadata {
-    pub fn from_path(path: &Path) -> Result<Self, Error> {
+    pub fn from_path(path: &Path) -> Result<Self> {
         let product_uid_hook = path.join(PRODUCT_UID_HOOK);
         let version_hook = path.join(VERSION_HOOK);
         let hardware_hook = path.join(HARDWARE_HOOK);

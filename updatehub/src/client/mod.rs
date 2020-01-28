@@ -26,6 +26,8 @@ pub(crate) enum ProbeResponse {
     ExtraPoll(i64),
 }
 
+pub type Result<T> = std::result::Result<T, Error>;
+
 #[derive(Debug, Display, From)]
 pub enum Error {
     #[display(fmt = "Invalid status code received: {}", _0)]
@@ -46,7 +48,7 @@ impl<'a> Api<'a> {
         Self { server }
     }
 
-    fn client(&self) -> Result<Client, Error> {
+    fn client(&self) -> Result<Client> {
         let mut headers = HeaderMap::new();
 
         headers.insert(USER_AGENT, "updatehub/next".parse()?);
@@ -63,7 +65,7 @@ impl<'a> Api<'a> {
         &self,
         runtime_settings: &RuntimeSettings,
         firmware: &Metadata,
-    ) -> Result<ProbeResponse, Error> {
+    ) -> Result<ProbeResponse> {
         let response = self
             .client()?
             .post(&format!("{}/upgrades", &self.server))
@@ -97,7 +99,7 @@ impl<'a> Api<'a> {
         package_uid: &str,
         download_dir: &Path,
         object: &str,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         use std::fs::create_dir_all;
         use tokio::{fs::OpenOptions, io::AsyncWriteExt};
 
@@ -138,7 +140,7 @@ impl<'a> Api<'a> {
         previous_state: Option<&str>,
         error_message: Option<String>,
         current_log: Option<String>,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         #[derive(Serialize)]
         #[serde(rename_all = "kebab-case")]
         struct Payload<'a> {
