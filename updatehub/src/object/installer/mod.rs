@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 mod copy;
-mod error;
 mod flash;
 mod imxkobs;
 mod raw;
@@ -11,8 +10,7 @@ mod tarball;
 mod test;
 mod ubifs;
 
-pub use error::Error;
-pub(crate) use error::Result;
+use super::{Error, Result};
 use pkg_schema::Object;
 use slog_scope::debug;
 

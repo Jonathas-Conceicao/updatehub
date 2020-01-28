@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::error::Result;
+use super::Result;
 use crate::{
     object::{Info, Installer},
     utils::{self, definitions::TargetTypeExt},

@@ -189,7 +189,7 @@ pub enum TransitionError {
     #[display(fmt = "Firmware error: {}", _0)]
     Firmware(crate::firmware::Error),
     #[display(fmt = "Installation error: {}", _0)]
-    Installation(crate::object::installer::Error),
+    Installation(crate::object::Error),
     #[display(fmt = "Runtime settings error: {}", _0)]
     RuntimeSettings(crate::runtime_settings::Error),
     #[display(fmt = "Update package error: {}", _0)]

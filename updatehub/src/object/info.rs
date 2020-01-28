@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::Result;
+use super::Result;
 use crypto_hash::{Algorithm, Hasher};
 use hex;
 use pkg_schema::{objects, Object};
