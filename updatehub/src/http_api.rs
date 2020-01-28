@@ -2,12 +2,21 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{error::Result, states::actor};
-use actix_web::{web, Error, HttpRequest, HttpResponse, Responder};
+use crate::states::actor;
+use actix_web::{http::StatusCode, web, HttpRequest, HttpResponse, Responder};
+use derive_more::{Display, From};
 use serde::Serialize;
 use serde_json::json;
 
 pub(crate) struct API(actix::Addr<actor::MachineActor>);
+
+pub type Result<T> = std::result::Result<T, Error>;
+
+#[derive(Debug, Display, From)]
+pub enum Error {
+    #[display(fmt = "Mailbox error: {}", _0)]
+    ActixMailbox(actix::MailboxError),
+}
 
 impl API {
     pub(crate) fn configure(cfg: &mut web::ServiceConfig, addr: actix::Addr<actor::MachineActor>) {
@@ -39,7 +48,7 @@ impl API {
 }
 
 impl Responder for actor::download_abort::Response {
-    type Error = Error;
+    type Error = actix_web::Error;
     type Future = HttpResponse;
 
     fn respond_to(self, _: &HttpRequest) -> Self::Future {
@@ -57,7 +66,7 @@ impl Responder for actor::download_abort::Response {
 }
 
 impl Responder for actor::probe::Response {
-    type Error = Error;
+    type Error = actix_web::Error;
     type Future = HttpResponse;
 
     fn respond_to(self, _: &HttpRequest) -> Self::Future {
@@ -76,5 +85,15 @@ impl Responder for actor::probe::Response {
                 HttpResponse::Ok().json(Payload { busy: true, state })
             }
         }
+    }
+}
+
+impl actix_web::ResponseError for Error {
+    fn status_code(&self) -> StatusCode {
+        StatusCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn error_response(&self) -> HttpResponse {
+        HttpResponse::InternalServerError().finish()
     }
 }

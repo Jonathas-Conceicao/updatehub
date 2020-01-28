@@ -5,7 +5,7 @@
 macro_rules! impl_object_for_object_types {
     ( $( $objtype:ident ),* ) => {
         impl Info for Object {
-            fn status(&self, download_dir: &std::path::Path) -> crate::error::Result<Status> {
+            fn status(&self, download_dir: &std::path::Path) -> crate::Result<Status> {
                 match *self {
                     $( Object::$objtype(ref o) => Ok(o.status(download_dir)?), )*
                 }

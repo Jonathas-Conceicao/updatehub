@@ -39,22 +39,22 @@ impl ProgressReporter for State<Install> {
 }
 
 pub(crate) trait ObjectInstaller {
-    fn check_requirements(&self) -> crate::error::Result<()> {
+    fn check_requirements(&self) -> crate::Result<()> {
         debug!("running default check_requirements");
         Ok(())
     }
 
-    fn setup(&mut self) -> crate::error::Result<()> {
+    fn setup(&mut self) -> crate::Result<()> {
         debug!("running default setup");
         Ok(())
     }
 
-    fn cleanup(&mut self) -> crate::error::Result<()> {
+    fn cleanup(&mut self) -> crate::Result<()> {
         debug!("running default cleanup");
         Ok(())
     }
 
-    fn install(&self, download_dir: std::path::PathBuf) -> crate::error::Result<()>;
+    fn install(&self, download_dir: std::path::PathBuf) -> crate::Result<()>;
 }
 
 #[async_trait::async_trait]
