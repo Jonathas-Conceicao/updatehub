@@ -29,11 +29,25 @@ pub struct Settings {
     pub(crate) update: Update,
 }
 
+pub type Result<T> = std::result::Result<T, Error>;
+
+#[derive(Debug, Display, From)]
+pub enum Error {
+    #[display(fmt = "IO error: {}", _0)]
+    Io(io::Error),
+    #[display(fmt = "Invalid INI fail: {}", _0)]
+    Ini(serde_ini::de::Error),
+    #[display(fmt = "Invalid interval")]
+    InvalidInterval,
+    #[display(fmt = "Invalid server address")]
+    InvalidServerAddress,
+}
+
 impl Settings {
     /// Loads the settings from the filesystem. If
     /// `/etc/updatehub.conf` does not exists, it uses the default
     /// settings.
-    pub fn load() -> Result<Self, Error> {
+    pub fn load() -> Result<Self> {
         use std::{fs::File, io::Read, path::Path};
 
         let path = Path::new(SYSTEM_SETTINGS_PATH);
@@ -57,7 +71,7 @@ impl Settings {
     // This parses the configuration file, taking into account the
     // needed validations for all fields, and returns either `Self` or
     // `Err`.
-    fn parse(content: &str) -> Result<Self, Error> {
+    fn parse(content: &str) -> Result<Self> {
         let settings = serde_ini::from_str::<Self>(content)?;
 
         if settings.polling.interval < Duration::seconds(60) {
@@ -78,18 +92,6 @@ impl Settings {
 
         Ok(settings)
     }
-}
-
-#[derive(Debug, Display, From)]
-pub enum Error {
-    #[display(fmt = "IO error: {}", _0)]
-    Io(io::Error),
-    #[display(fmt = "Invalid INI fail: {}", _0)]
-    Ini(serde_ini::de::Error),
-    #[display(fmt = "Invalid interval")]
-    InvalidInterval,
-    #[display(fmt = "Invalid server address")]
-    InvalidServerAddress,
 }
 
 #[derive(Debug, Deserialize, PartialEq, Serialize, Clone)]
