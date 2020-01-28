@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::utils::{Error, Result};
+use super::{Error, Result};
 use std::{
     fs,
     io::{BufRead, BufReader},

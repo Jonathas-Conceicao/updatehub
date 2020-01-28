@@ -2,7 +2,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::utils::{mtd, Error, Result};
+use super::{Error, Result};
+use crate::utils::mtd;
 use pkg_schema::definitions::{
     target_permissions::{Gid, Uid},
     TargetType,
