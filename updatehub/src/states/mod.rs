@@ -193,7 +193,7 @@ pub enum TransitionError {
     #[display(fmt = "Runtime settings error: {}", _0)]
     RuntimeSettings(crate::runtime_settings::Error),
     #[display(fmt = "Update package error: {}", _0)]
-    UpdatePackage(crate::update_package::UpdatePackageError),
+    UpdatePackage(crate::update_package::Error),
 
     #[display(fmt = "Update package error: {}", _0)]
     Io(std::io::Error),

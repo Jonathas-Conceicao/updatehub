@@ -41,8 +41,10 @@ pub(crate) struct UpdatePackage {
     raw: String,
 }
 
+pub type Result<T> = std::result::Result<T, Error>;
+
 #[derive(Debug, Display, From)]
-pub enum UpdatePackageError {
+pub enum Error {
     #[display(fmt = "Json parsing error: {}", _0)]
     JsonParsing(serde_json::Error),
 
@@ -52,7 +54,7 @@ pub enum UpdatePackageError {
 }
 
 impl UpdatePackage {
-    pub(crate) fn parse(content: &str) -> Result<Self, UpdatePackageError> {
+    pub(crate) fn parse(content: &str) -> Result<Self> {
         let mut update_package = serde_json::from_str::<Self>(content)?;
         update_package.raw = content.into();
 
@@ -63,7 +65,7 @@ impl UpdatePackage {
         hex_digest(Algorithm::SHA256, self.raw.as_bytes())
     }
 
-    pub(crate) fn compatible_with(&self, firmware: &Metadata) -> Result<(), UpdatePackageError> {
+    pub(crate) fn compatible_with(&self, firmware: &Metadata) -> Result<()> {
         self.supported_hardware.compatible_with(&firmware.hardware)
     }
 

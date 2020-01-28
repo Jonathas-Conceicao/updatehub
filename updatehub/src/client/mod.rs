@@ -33,7 +33,7 @@ pub enum Error {
     #[display(fmt = "Invalid status code received: {}", _0)]
     InvalidStatusResponse(reqwest::StatusCode),
     #[display(fmt = "Update package error: {}", _0)]
-    UpdatePackage(crate::update_package::UpdatePackageError),
+    UpdatePackage(crate::update_package::Error),
 
     #[display(fmt = "Update package error: {}", _0)]
     Io(std::io::Error),

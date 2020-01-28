@@ -26,7 +26,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Debug, Display, From)]
 pub enum Error {
     #[display(fmt = "Update package error: {}", _0)]
-    UpdatePackage(crate::update_package::UpdatePackageError),
+    UpdatePackage(crate::update_package::Error),
     #[display(fmt = "Runtime settings error: {}", _0)]
     RuntimeSettings(crate::runtime_settings::Error),
     #[display(fmt = "Settings error: {}", _0)]
