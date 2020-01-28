@@ -4,8 +4,8 @@
 
 use super::{
     actor::{self, download_abort, SharedState},
-    Idle, Install, ProgressReporter, State, StateChangeImpl, StateMachine, TransitionCallback,
-    TransitionError,
+    Idle, Install, ProgressReporter, Result, State, StateChangeImpl, StateMachine,
+    TransitionCallback, TransitionError,
 };
 use crate::{
     firmware::installation_set,
@@ -13,7 +13,6 @@ use crate::{
     update_package::UpdatePackage,
 };
 use derivative::Derivative;
-
 use std::sync::mpsc;
 
 #[derive(Derivative)]
@@ -23,7 +22,7 @@ pub(super) struct Download {
     pub(super) installation_set: installation_set::Set,
     #[derivative(PartialEq = "ignore")]
     #[derivative(Debug = "ignore")]
-    pub(super) download_chan: mpsc::Receiver<Vec<Result<(), crate::client::Error>>>,
+    pub(super) download_chan: mpsc::Receiver<Vec<crate::client::Result<()>>>,
 }
 
 create_state_step!(Download => Idle);
@@ -58,7 +57,7 @@ impl StateChangeImpl for State<Download> {
     async fn handle(
         self,
         shared_state: &mut SharedState,
-    ) -> Result<(StateMachine, actor::StepTransition), TransitionError> {
+    ) -> Result<(StateMachine, actor::StepTransition)> {
         match self.0.download_chan.try_recv() {
             Ok(vec) => vec.into_iter().try_for_each(|res| res)?,
             Err(mpsc::TryRecvError::Empty) => {

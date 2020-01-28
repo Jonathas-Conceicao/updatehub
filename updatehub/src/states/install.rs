@@ -4,8 +4,8 @@
 
 use super::{
     actor::{self, SharedState},
-    Idle, ProgressReporter, Reboot, State, StateChangeImpl, StateMachine, TransitionCallback,
-    TransitionError,
+    Idle, ProgressReporter, Reboot, Result, State, StateChangeImpl, StateMachine,
+    TransitionCallback,
 };
 use crate::{
     firmware::installation_set,
@@ -66,7 +66,7 @@ impl StateChangeImpl for State<Install> {
     async fn handle(
         mut self,
         shared_state: &mut SharedState,
-    ) -> Result<(StateMachine, actor::StepTransition), TransitionError> {
+    ) -> Result<(StateMachine, actor::StepTransition)> {
         let package_uid = self.0.update_package.package_uid();
         info!("Installing update: {}", &package_uid);
 

@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    Idle, State, StateChangeImpl, StateMachine, TransitionError,
+    Idle, Result, State, StateChangeImpl, StateMachine, TransitionError,
 };
 
 use derivative::Derivative;
@@ -23,10 +23,7 @@ impl StateChangeImpl for State<Error> {
         "error"
     }
 
-    async fn handle(
-        self,
-        _: &mut SharedState,
-    ) -> Result<(StateMachine, actor::StepTransition), TransitionError> {
+    async fn handle(self, _: &mut SharedState) -> Result<(StateMachine, actor::StepTransition)> {
         error!("Error state reached: {:?}", self.0.error);
 
         info!("Returning to idle state");

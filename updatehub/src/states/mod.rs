@@ -26,12 +26,40 @@ use derive_more::{Display, From};
 use slog_scope::info;
 use std::sync::mpsc;
 
+pub type Result<T> = std::result::Result<T, TransitionError>;
+
+#[derive(Debug, Display, From)]
+pub enum TransitionError {
+    #[display(fmt = "Not all objects are ready for use")]
+    ObjectsNotReady,
+
+    #[display(fmt = "Failed to read from channel: {}", _0)]
+    MpscRecv(mpsc::TryRecvError),
+    #[display(fmt = "Client error: {}", _0)]
+    Client(crate::client::Error),
+    #[display(fmt = "Firmware error: {}", _0)]
+    Firmware(crate::firmware::Error),
+    #[display(fmt = "Installation error: {}", _0)]
+    Installation(crate::object::Error),
+    #[display(fmt = "Runtime settings error: {}", _0)]
+    RuntimeSettings(crate::runtime_settings::Error),
+    #[display(fmt = "Update package error: {}", _0)]
+    UpdatePackage(crate::update_package::Error),
+
+    #[display(fmt = "Update package error: {}", _0)]
+    Io(std::io::Error),
+    #[display(fmt = "Mailbox error: {}", _0)]
+    ActixMailbox(actix::MailboxError),
+    #[display(fmt = "Process error: {}", _0)]
+    Process(easy_process::Error),
+}
+
 #[async_trait]
 trait StateChangeImpl {
     async fn handle(
         self,
         shared_state: &mut actor::SharedState,
-    ) -> Result<(StateMachine, actor::StepTransition), TransitionError>;
+    ) -> Result<(StateMachine, actor::StepTransition)>;
 
     fn name(&self) -> &'static str;
 
@@ -77,7 +105,7 @@ where
     async fn handle_with_callback_and_report_progress(
         self,
         shared_state: &mut actor::SharedState,
-    ) -> Result<(StateMachine, actor::StepTransition), TransitionError> {
+    ) -> Result<(StateMachine, actor::StepTransition)> {
         use transition::{state_change_callback, Transition};
 
         let transition =
@@ -99,7 +127,7 @@ where
     async fn handle_and_report_progress(
         self,
         shared_state: &mut actor::SharedState,
-    ) -> Result<(StateMachine, actor::StepTransition), TransitionError> {
+    ) -> Result<(StateMachine, actor::StepTransition)> {
         let server = shared_state.server_address().to_owned();
         let firmware = &shared_state.firmware.clone();
         let package_uid = &self.package_uid();
@@ -139,7 +167,7 @@ impl StateMachine {
     async fn move_to_next_state(
         self,
         shared_state: &mut actor::SharedState,
-    ) -> Result<(Self, actor::StepTransition), TransitionError> {
+    ) -> Result<(Self, actor::StepTransition)> {
         match self {
             StateMachine::Error(s) => s.handle(shared_state).await,
             StateMachine::Park(s) => s.handle(shared_state).await,
@@ -175,32 +203,6 @@ impl StateMachine {
             StateMachine::Reboot(s) => f(s),
         }
     }
-}
-
-#[derive(Debug, Display, From)]
-pub enum TransitionError {
-    #[display(fmt = "Not all objects are ready for use")]
-    ObjectsNotReady,
-
-    #[display(fmt = "Failed to read from channel: {}", _0)]
-    MpscRecv(mpsc::TryRecvError),
-    #[display(fmt = "Client error: {}", _0)]
-    Client(crate::client::Error),
-    #[display(fmt = "Firmware error: {}", _0)]
-    Firmware(crate::firmware::Error),
-    #[display(fmt = "Installation error: {}", _0)]
-    Installation(crate::object::Error),
-    #[display(fmt = "Runtime settings error: {}", _0)]
-    RuntimeSettings(crate::runtime_settings::Error),
-    #[display(fmt = "Update package error: {}", _0)]
-    UpdatePackage(crate::update_package::Error),
-
-    #[display(fmt = "Update package error: {}", _0)]
-    Io(std::io::Error),
-    #[display(fmt = "Mailbox error: {}", _0)]
-    ActixMailbox(actix::MailboxError),
-    #[display(fmt = "Process error: {}", _0)]
-    Process(easy_process::Error),
 }
 
 /// Runs the state machine up to completion handling all procing
